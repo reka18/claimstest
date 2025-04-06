@@ -69,7 +69,7 @@ class ClaimCreate(BaseModel):
         return value
 
 
-@app.post("/claims/")
+@app.post("/claims")
 async def create_claim(claim: ClaimCreate, session: AsyncSession = Depends(get_async_session)):
     net_fee = claim.provider_fees + claim.member_coinsurance + claim.member_copay - claim.allowed_fees
     print(f"Calculated net_fee: {net_fee}")
@@ -81,7 +81,7 @@ async def create_claim(claim: ClaimCreate, session: AsyncSession = Depends(get_a
     return new_claim
 
 
-@app.get("/claims/")
+@app.get("/claims")
 async def get_all_claims(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(Claim))  # Leverage ORM
     claims = result.scalars().all()
@@ -94,7 +94,7 @@ async def health_check():
     return {"message": "OK"}
 
 
-@app.get("/top_providers/")
+@app.get("/top_providers")
 async def get_top_providers(session: AsyncSession = Depends(get_async_session)):
     """
     Fetches the top 10 providers by net fees.

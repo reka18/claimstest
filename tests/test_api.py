@@ -16,20 +16,20 @@ async def test_health_check():
     assert response.json() == {"message": "OK"}
 
 
-# @pytest.mark.asyncio
-# async def test_get_all_claims():
-#     """Test retrieving all claims."""
-#     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-#         # Make GET request to fetch all claims
-#         response = await client.get("/claims")
-#
-#     # Assertions
-#     assert response.status_code == 200
-#     claims = response.json()
-#     assert isinstance(claims, list)  # Response should be a list
-#     # Additional Assertion: Ensure there is at least one claim
-#     if claims:
-#         assert "id" in claims[0]  # Ensure claim objects have the required fields
+@pytest.mark.asyncio
+async def test_get_all_claims():
+    """Test retrieving all claims."""
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        # Make GET request to fetch all claims
+        response = await client.get("/claims")
+
+    # Assertions
+    assert response.status_code == 200
+    claims = response.json()
+    assert isinstance(claims, list)  # Response should be a list
+    # Additional Assertion: Ensure there is at least one claim
+    if claims:
+        assert "id" in claims[0]  # Ensure claim objects have the required fields
 #
 #
 # @pytest.mark.asyncio
