@@ -12,5 +12,4 @@ CREATE TABLE claims (
     member_coinsurance NUMERIC(10, 2) NOT NULL,
     member_copay NUMERIC(10, 2) NOT NULL,
     net_fee NUMERIC(10, 2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

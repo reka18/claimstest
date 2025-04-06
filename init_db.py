@@ -109,7 +109,7 @@ async def initialize_data():
     data["net_fee"] = data["provider_fees"] + data["member_coinsurance"] + data["member_copay"] - data["allowed_fees"]
 
     # Parse and normalize `service_date`
-    data["service_date"] = pd.to_datetime(data["service_date"], errors="coerce")
+    data["service_date"] = pd.to_datetime(data["service_date"], format="%m/%d/%y %H:%M", errors="coerce")
 
     # Handle nullable fields
     data["quadrant"] = data["quadrant"].fillna("").astype(str)  # Use empty strings for quadrant

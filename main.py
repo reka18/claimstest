@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, Float, BigInteger, Numeric, Date, TIMESTAMP, and_
+from sqlalchemy.schema import FetchedValue
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
@@ -28,23 +29,23 @@ class Claim(Base):
     __tablename__ = "claims"
 
     id = Column(Integer, primary_key=True, index=True)
-    service_date = Column(Date, nullable=True)  # New column
+    service_date = Column(Date, nullable=False)
     submitted_procedure = Column(String(255), nullable=False)
-    quadrant = Column(String(10), nullable=True)  # New column
-    plan_group = Column(String(50), nullable=False)  # New column
-    subscriber_id = Column(BigInteger, nullable=False)  # New column
+    quadrant = Column(String(10), nullable=True)
+    plan_group = Column(String(50), nullable=False)
+    subscriber_id = Column(BigInteger, nullable=False)
     provider_npi = Column(BigInteger, nullable=False)
     provider_fees = Column(Numeric(10, 2), nullable=False)
     allowed_fees = Column(Numeric(10, 2), nullable=False)
     member_coinsurance = Column(Numeric(10, 2), nullable=False)
     member_copay = Column(Numeric(10, 2), nullable=False)
     net_fee = Column(Numeric(10, 2), nullable=False)
-    created_at = Column(TIMESTAMP, nullable=False)  # Matches DB type
+
 
 
 # Pydantic model for creating claims
 class ClaimCreate(BaseModel):
-    provider_npi: str
+    provider_npi: int
     submitted_procedure: str
     allowed_fees: float
     provider_fees: float
@@ -66,8 +67,8 @@ async def create_claim(claim: ClaimCreate, session: AsyncSession = Depends(get_a
 
 @app.get("/claims/")
 async def get_all_claims(session: AsyncSession = Depends(get_async_session)):
-    result = await session.execute("SELECT * FROM claims")
-    claims = result.fetchall()
+    result = await session.execute(select(Claim))  # Leverage ORM
+    claims = result.scalars().all()
     return claims
 
 
