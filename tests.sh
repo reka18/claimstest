@@ -26,7 +26,7 @@ echo "Test app is ready!"
 
 # Run tests using pytest
 echo "Running tests..."
-pytest tests/ --tb=short -q
+pytest -p no:warnings tests/ --tb=short -q
 
 # Capture the pytest exit code
 TEST_EXIT_CODE=$?
