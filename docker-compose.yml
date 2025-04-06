@@ -2,19 +2,21 @@ services:
   app:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile  # Path to Dockerfile
+      dockerfile: ./docker/Dockerfile
     container_name: claim_process_app
     ports:
-      - "8000:8000"  # Expose FastAPI on port 8000
+      - "8000:8000"
     command: >
-      bash -c "/app/wait-for-it.sh db:5432 -- python init_db.py && 
+      bash -c "/app/wait-for-it.sh db:5432 -- python init_db.py &&
       uvicorn main:app --host 0.0.0.0 --port 8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://claim_user:claim_password@db/claims_db
+      - REDIS_URL=redis://redis:6379/0  # Add this environment variable
     depends_on:
-      - db  # Ensures database starts before the app
+      - db
+      - redis  # App depends on Redis
     volumes:
-      - .:/app  # Mount the local project directory (optional for development)
+      - .:/app
 
   db:
     image: postgres:15
@@ -30,5 +32,14 @@ services:
       - ./data/db:/var/lib/postgresql/data
       - ./docker/init:/docker-entrypoint-initdb.d/
 
+  redis:
+    image: redis:latest  # Use the latest Redis image
+    container_name: claim_process_redis
+    ports:
+      - "6379:6379"  # Exposes Redis on its default port
+    volumes:
+      - redis_data:/data  # Optional: Persistent storage for Redis data
+
 volumes:
   postgres_data:
+  redis_data:  # Persistent volume for Redis

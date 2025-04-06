@@ -7,12 +7,15 @@ services:
     ports:
       - "8001:8000"  # Expose FastAPI on port 8000
     command: >
-      bash -c "/app/wait-for-it.sh db_test:5432 -- python init_db.py && 
-      uvicorn main:app --host 0.0.0.0 --port 8000"
+      bash -c "/app/wait-for-it.sh db_test:5432 -- echo 'db_test is up' &&
+               /app/wait-for-it.sh redis_test:6379 -- echo 'redis_test is up' &&
+               python init_db.py && uvicorn main:app --host 0.0.0.0 --port 8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://test_user:test_password@db_test/test_claims_db
+      - REDIS_URL=redis://redis_test:6379  # Connection to test Redis instance
     depends_on:
       - db_test  # Ensures database starts before the app
+      - redis_test  # Ensures Redis starts before the app
     volumes:
       - .:/app  # Mount the local project directory (optional for development)
 
@@ -27,8 +30,18 @@ services:
       POSTGRES_PASSWORD: test_password
       POSTGRES_DB: test_claims_db
     volumes:
-      - ./data/test_db:/var/lib/postgresql/data
+      - ./data/test_db:/var/lib/postgresql/data  # Persistent test DB storage
       - ./docker/init:/docker-entrypoint-initdb.d/
+
+  redis_test:
+    image: redis:latest  # Use the latest version of Redis
+    container_name: claim_process_redis_test
+    restart: always
+    ports:
+      - "6380:6379"  # Expose Redis on a different port (test-specific)
+    volumes:
+      - redis_test_data:/data  # Optional: Persistent storage for Redis in testing
 
 volumes:
   postgres_data:
+  redis_test_data:

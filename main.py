@@ -1,6 +1,14 @@
+# Standard Python libraries for date handling
 import os
+from contextlib import asynccontextmanager
+from datetime import date, datetime
+
+import redis.asyncio as redis
 # Import FastAPI and its dependencies for building a RESTful API
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, status
+from fastapi.exceptions import HTTPException
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
 # Pydantic for data validation and serialization
 from pydantic import BaseModel, field_validator
 # SQLAlchemy for async database operations and ORM
@@ -8,16 +16,10 @@ from sqlalchemy import select, Column, Integer, String, BigInteger, Numeric, Dat
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
-# Standard Python libraries for date handling
-from datetime import date, datetime
-# Uncomment these if you enable rate limiting later
-# from fastapi_limiter import FastAPILimiter
-# from fastapi_limiter.depends import RateLimiter
-# import redis.asyncio as redis
 
 # Fetch the database URL from environment variables for security and configurability
-# Expected format: postgresql+asyncpg://user:password@host:port/dbname
 DATABASE_URL = os.getenv("DATABASE_URL")
+REDIS_URL = os.getenv("REDIS_URL")
 
 # --- SQLAlchemy Setup ---
 # Create an async engine for PostgreSQL with echo=True for debugging SQL queries
@@ -27,6 +29,7 @@ async_session = async_sessionmaker(engine, expire_on_commit=False)
 # Base class for declarative ORM models
 Base = declarative_base()
 
+
 # --- Dependency Injection for DB Sessions ---
 # Define a dependency to provide an async database session for each request
 # This ensures proper session management (open, yield, close) per request
@@ -34,9 +37,15 @@ async def get_async_session() -> AsyncSession:
     async with async_session() as session:
         yield session  # Yield the session to the caller, auto-closed after use
 
+async def startup_event():
+    redis_instance = redis.from_url(REDIS_URL, decode_responses=True)  # ✅
+    await FastAPILimiter.init(redis_instance)
+
+
 # --- FastAPI Application ---
 # Instantiate the FastAPI app, which will handle all HTTP endpoints
-app = FastAPI()
+app = FastAPI(on_startup=[startup_event])
+
 
 # --- Database Model ---
 # Define the 'claims' table structure using SQLAlchemy ORM
@@ -67,6 +76,7 @@ class Claim(Base):
     member_copay = Column(Numeric(10, 2), nullable=False)
     # Calculated net fee, same precision, required
     net_fee = Column(Numeric(10, 2), nullable=False)
+
 
 # --- Pydantic Model for Input Validation ---
 # Define a Pydantic model for creating claims, ensuring data is validated before DB insertion
@@ -114,12 +124,13 @@ class ClaimCreate(BaseModel):
                 "service_date must be in the format 'MM/DD/YY HH:MM', e.g., '3/28/18 0:00'"
             )
 
+
 # --- API Endpoints ---
 # POST endpoint to create a new claim
 @app.post("/claims", status_code=status.HTTP_201_CREATED)
 async def create_claim(
-    claim: ClaimCreate,  # Incoming claim data, validated by Pydantic
-    session: AsyncSession = Depends(get_async_session),  # DB session dependency
+        claim: ClaimCreate,  # Incoming claim data, validated by Pydantic
+        session: AsyncSession = Depends(get_async_session),  # DB session dependency
 ):
     # Calculate net_fee based on provided values
     # Formula: provider_fees + member_coinsurance + member_copay - allowed_fees
@@ -149,19 +160,22 @@ async def create_claim(
     await session.refresh(claim_object)
     return claim_object  # Return the created claim with its DB-generated ID
 
+
 # GET endpoint to fetch all claims
-@app.get("/claims")  # Rate limiting can be added: dependencies=[Depends(RateLimiter(times=10, seconds=60))]
+@app.get("/claims", dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def get_all_claims(session: AsyncSession = Depends(get_async_session)):
     # Execute a SELECT query using SQLAlchemy ORM to fetch all claims
     result = await session.execute(select(Claim))
     claims = result.scalars().all()  # Extract all claim objects from the result
     return claims  # Return as JSON list
 
+
 # Health check endpoint for monitoring
 @app.get("/health", tags=["Health"])
 async def health_check():
     # Simple endpoint to verify the API is running
     return {"message": "OK"}
+
 
 # GET endpoint to fetch top 10 providers by net fees
 @app.get("/top_providers")
@@ -191,13 +205,34 @@ async def get_top_providers(session: AsyncSession = Depends(get_async_session)):
         ]
     }
 
+
 # --- Rate Limiting Setup (Commented Out) ---
-# Uncomment this to enable rate limiting with Redis
-# @app.on_event("startup")
-# async def startup():
-#     # Initialize Redis client and FastAPI-Limiter on app startup
-#     redis_client = redis.from_url("redis://localhost:6379")  # Adjust URL as needed
-#     await FastAPILimiter.init(redis_client)
+@asynccontextmanager
+async def lifespan(app):
+    redis_instance = None  # Variable to manage Redis connection
+    try:
+        # Initialize a connection to Redis
+        redis_instance = redis.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+
+        # Test Redis connectivity
+        await redis_instance.ping()
+        print("Connected to Redis at:", REDIS_URL)
+
+        # Initialize the FastAPI limiter
+        await FastAPILimiter.init(redis_instance)
+        print("FastAPILimiter initialized successfully!")
+
+        # Yield to boot up the application
+        yield
+    except Exception as e:
+        # Log Redis/FastAPILimiter errors, continue app without rate limiting
+        print(f"Error during FastAPILimiter or Redis initialization: {str(e)}")
+        yield  # Allow the app to start, even if there's an error
+    finally:
+        # Cleanup Redis connection when the app shuts down
+        if redis_instance:
+            await redis_instance.close()
+
 
 # --- External Payments Service Interaction ---
 """

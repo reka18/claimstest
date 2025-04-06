@@ -2,6 +2,8 @@
 
 # Define the test-specific Docker Compose file
 DOCKER_COMPOSE_TEST_FILE="docker-compose-test.yml"
+export REDIS_URL="redis://localhost:6380"
+
 
 # Set the test database URL
 export DATABASE_URL="postgresql+asyncpg://test_user:test_password@db_test/test_claims_db"

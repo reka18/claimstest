@@ -1,7 +1,18 @@
 from datetime import datetime
 
+import fakeredis
 import httpx
 import pytest
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+
+
+@pytest.fixture(autouse=True)
+async def mock_fastapi_limiter():
+    # Use fakeredis as a mock Redis instance
+    fake_redis = fakeredis.FakeRedis()
+    await FastAPILimiter.init(fake_redis)
+
 
 BASE_URL = "http://0.0.0.0:8001"
 
