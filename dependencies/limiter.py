@@ -1,6 +1,8 @@
 import redis.asyncio as redis
 from fastapi_limiter import FastAPILimiter
+
 from config import REDIS_URL
+
 
 async def init_limiter():
     """

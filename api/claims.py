@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, status, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from fastapi_limiter.depends import RateLimiter
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Claim
-from schemas.claim import ClaimCreate
-from dependencies.session import get_async_session
 from db.normalize import normalize_claim_dict
+from dependencies.session import get_async_session
+from schemas.claim import ClaimCreate
 
 router = APIRouter()
 
