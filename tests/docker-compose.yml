@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  postgres_test:
+    image: postgres:15
+    container_name: postgres_test_db
+    ports:
+      - "5433:5432"  # Use a custom port for the test database
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  test_postgres_data:

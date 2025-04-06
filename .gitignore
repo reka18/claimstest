@@ -1,0 +1,5 @@
+**/.direnv/
+**/.idea/
+**/__pycache__/
+**/.vscode/
+**/.DS_Store

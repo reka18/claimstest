@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile  # Path to Dockerfile
+    container_name: claim_process_app
+    ports:
+      - "8000:8000"  # Expose FastAPI on port 8000
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://claim_user:claim_password@db/claims_db
+    depends_on:
+      - db  # Ensures database starts before the app
+    volumes:
+      - .:/app  # Mount the local project directory (optional for development)
+
+  db:
+    image: postgres:15  # PostgreSQL image
+    container_name: claim_process_db
+    restart: always  # Restart automatically if the container stops
+    ports:
+      - "5432:5432"  # PostgreSQL default port
+    environment:
+      POSTGRES_USER: claim_user          # Database user
+      POSTGRES_PASSWORD: claim_password  # Database password
+      POSTGRES_DB: claims_db             # Create a database named "claims_db"
+    volumes:
+      - ./data/db:/var/lib/postgresql/data  # Store DB data in ./data/db
+      - ./docker/init:/docker-entrypoint-initdb.d/  # Initialize with any SQL scripts
+
+volumes:
+  postgres_data:  # Named volume (not used anymore for database data)
