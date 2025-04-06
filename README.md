@@ -1,6 +1,19 @@
-## Usage
+## ⚙️ Usage
+
+### 1. Clone the Repository
+
+    git clone git@github.com:reka18/claimstest.git
+
+### 2. Install Dependencies
+
+    pip install -r requirements.txt
+
+### 4. Test the Application
     
     ./test.sh
+
+### 5. Run the Application
+
     ./start.sh
 
 ## ✅ Assignment 1 Compliance Report
