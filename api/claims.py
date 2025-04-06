@@ -6,7 +6,7 @@ from fastapi_limiter.depends import RateLimiter
 from db.models import Claim
 from schemas.claim import ClaimCreate
 from dependencies.session import get_async_session
-from normalize import normalize_claim_dict
+from db.normalize import normalize_claim_dict
 
 router = APIRouter()
 

@@ -5,7 +5,7 @@ import pandas as pd
 
 from db.database import engine, async_session, Base
 from db.models import Claim
-from normalize import (
+from db.normalize import (
     normalize_headers,
     normalize_monetary_fields,
     normalize_field_values,

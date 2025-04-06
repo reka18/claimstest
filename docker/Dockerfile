@@ -25,4 +25,4 @@ COPY wait-for-it.sh /app/wait-for-it.sh
 RUN chmod +x /app/wait-for-it.sh
 
 # Set the command to wait for the database before running the app
-CMD ["bash", "-c", "/app/wait-for-it.sh db:5432 -- python init_db.py && uvicorn main:app --host 0.0.0.0 --port 8000"]
+CMD ["bash", "-c", "/app/wait-for-it.sh db:5432 -- python -m db.init_db.py && uvicorn main:app --host 0.0.0.0 --port 8000"]

@@ -11,7 +11,7 @@ services:
     command: >
       bash -c "/app/wait-for-it.sh db_test:5432 -- echo 'db_test is up' &&
                /app/wait-for-it.sh redis_test:6379 -- echo 'redis_test is up' &&
-               python init_db.py && uvicorn main:app --host 0.0.0.0 --port 8000"
+               python -m db.init_db && uvicorn main:app --host 0.0.0.0 --port 8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://test_user:test_password@db_test/test_claims_db
       - REDIS_URL=redis://redis_test:6379
