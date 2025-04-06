@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   app:
     build:
@@ -8,6 +6,9 @@ services:
     container_name: claim_process_app
     ports:
       - "8000:8000"  # Expose FastAPI on port 8000
+    command: >
+      bash -c "/app/wait-for-it.sh db:5432 -- python init_db.py && 
+      uvicorn app.main:app --host 0.0.0.0 --port 8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://claim_user:claim_password@db/claims_db
     depends_on:
@@ -16,18 +17,18 @@ services:
       - .:/app  # Mount the local project directory (optional for development)
 
   db:
-    image: postgres:15  # PostgreSQL image
+    image: postgres:15
     container_name: claim_process_db
-    restart: always  # Restart automatically if the container stops
+    restart: always
     ports:
-      - "5432:5432"  # PostgreSQL default port
+      - "5433:5432"
     environment:
-      POSTGRES_USER: claim_user          # Database user
-      POSTGRES_PASSWORD: claim_password  # Database password
-      POSTGRES_DB: claims_db             # Create a database named "claims_db"
+      POSTGRES_USER: claim_user
+      POSTGRES_PASSWORD: claim_password
+      POSTGRES_DB: claims_db
     volumes:
-      - ./data/db:/var/lib/postgresql/data  # Store DB data in ./data/db
-      - ./docker/init:/docker-entrypoint-initdb.d/  # Initialize with any SQL scripts
+      - ./data/db:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d/
 
 volumes:
-  postgres_data:  # Named volume (not used anymore for database data)
+  postgres_data:

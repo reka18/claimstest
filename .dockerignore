@@ -35,3 +35,11 @@ docker-compose.override.yml
 # Git-related files
 .git/
 *.gitignore
+
+# Ignore the data directory
+data/
+
+# Ignore other unnecessary files/directories
+*.pyc
+*.db
+.env
