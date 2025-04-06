@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+
 from app.main import app, Base, engine
 
 
@@ -20,12 +21,20 @@ def setup_test_database():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
 
+    # Set up a dedicated event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     # Run setup
-    loop = asyncio.get_event_loop()
     loop.run_until_complete(_create_tables())
-    yield
+
+    yield  # Allow the tests to run
+
     # Run teardown
     loop.run_until_complete(_drop_tables())
+
+    # Close the event loop
+    loop.close()
 
 
 # Fixture for using the TestClient
