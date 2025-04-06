@@ -1,5 +1,6 @@
 import pytest
 import httpx
+from datetime import datetime
 
 BASE_URL = "http://0.0.0.0:8001"
 
@@ -52,35 +53,43 @@ async def test_get_top_providers():
     assert providers[2]["provider_npi"] == 1497775530
     # Assert that 1497775530 net_fee is 116
     assert providers[2]["total_net_fee"] == 116.85
-#
-#
-# @pytest.mark.asyncio
-# async def test_create_claim():
-#     """Test creating a new claim."""
-#     new_claim = {
-#         "service_date": "2023-10-25",
-#         "submitted_procedure": "Procedure ABC",
-#         "quadrant": "UR",
-#         "plan_group": "Group A",
-#         "subscriber_id": 100001,
-#         "provider_npi": 1203004567,
-#         "provider_fees": 500.75,
-#         "allowed_fees": 450.50,
-#         "member_coinsurance": 50.25,
-#         "member_copay": 20.00,
-#         "net_fee": 380.25
-#     }
-#
-#     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-#         # Make POST request to create a new claim
-#         response = await client.post("/claims", json=new_claim)
-#
-#     # Assertions
-#     assert response.status_code == 201  # Created
-#     created_claim = response.json()
-#     for key in new_claim:
-#         assert key in created_claim  # Ensure all fields are returned
-#         assert created_claim[key] == new_claim[key]  # Values should match
+
+
+@pytest.mark.asyncio
+async def test_create_claim():
+    """Test creating a new claim."""
+    new_claim = {
+		"service_date": "3/28/18 0:00",
+		"submitted_procedure": "D123",
+		"quadrant": "UR",
+		"plan_group": "Group A",
+		"subscriber_id": 100001,
+		"provider_npi": 1234567890,
+		"provider_fees": 500.75,
+		"allowed_fees": 450.50,
+		"member_coinsurance": 50.25,
+		"member_copay": 20.00,
+    }
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        # Make POST request to create a new claim
+        response = await client.post("/claims", json=new_claim)
+
+    # Assertions
+    assert response.status_code == 201  # Created
+    created_claim = response.json()
+
+    # This is the expected net fee calculation
+    new_claim["net_fee"] = 120.5
+    for key in new_claim:
+        if key == "service_date":
+            parsed_date = datetime.strptime(new_claim[key], "%m/%d/%y %H:%M")
+            # Convert `parsed_date` to ISO string for comparison
+            assert parsed_date.date().isoformat() == created_claim[key]
+        else:
+            assert key in created_claim  # Ensure all fields are returned
+            assert created_claim[key] == new_claim[key]  # Values should match
+
 #
 #
 # @pytest.mark.asyncio
