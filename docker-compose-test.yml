@@ -1,46 +1,48 @@
+
+# This is the test specific docker-compose file used by the test suite.
 services:
   app_test:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile  # Path to Dockerfile
+      dockerfile: ./docker/Dockerfile
     container_name: test_claim_process_app
     ports:
-      - "8001:8000"  # Expose FastAPI on port 8000
+      - "8001:8000"
     command: >
       bash -c "/app/wait-for-it.sh db_test:5432 -- echo 'db_test is up' &&
                /app/wait-for-it.sh redis_test:6379 -- echo 'redis_test is up' &&
                python init_db.py && uvicorn main:app --host 0.0.0.0 --port 8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://test_user:test_password@db_test/test_claims_db
-      - REDIS_URL=redis://redis_test:6379  # Connection to test Redis instance
+      - REDIS_URL=redis://redis_test:6379
     depends_on:
-      - db_test  # Ensures database starts before the app
-      - redis_test  # Ensures Redis starts before the app
+      - db_test
+      - redis_test
     volumes:
-      - .:/app  # Mount the local project directory (optional for development)
+      - .:/app
 
   db_test:
     image: postgres:15
     container_name: claim_process_db_test
     restart: always
     ports:
-      - "5434:5432"  # Expose on a different port
+      - "5434:5432"
     environment:
       POSTGRES_USER: test_user
       POSTGRES_PASSWORD: test_password
       POSTGRES_DB: test_claims_db
     volumes:
-      - ./data/test_db:/var/lib/postgresql/data  # Persistent test DB storage
+      - ./data/test_db:/var/lib/postgresql/data
       - ./docker/init:/docker-entrypoint-initdb.d/
 
   redis_test:
-    image: redis:latest  # Use the latest version of Redis
+    image: redis:latest
     container_name: claim_process_redis_test
     restart: always
     ports:
-      - "6380:6379"  # Expose Redis on a different port (test-specific)
+      - "6380:6379"
     volumes:
-      - redis_test_data:/data  # Optional: Persistent storage for Redis in testing
+      - redis_test_data:/data
 
 volumes:
   postgres_data:

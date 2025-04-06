@@ -1,34 +1,26 @@
 from datetime import date, datetime
-from pydantic import BaseModel, field_validator
+from typing import Optional
+from pydantic import BaseModel, conint, confloat, constr, field_validator
 
 class ClaimCreate(BaseModel):
     service_date: date
-    submitted_procedure: str
-    quadrant: str
+    submitted_procedure: constr(pattern=r"^D\w+")
+    quadrant: Optional[str]
     plan_group: str
     subscriber_id: int
-    provider_npi: int
-    provider_fees: float
-    allowed_fees: float
-    member_coinsurance: float
-    member_copay: float
-
-    @field_validator("submitted_procedure")
-    def validate_procedure(cls, v):
-        if not v.startswith("D"):
-            raise ValueError("Must start with 'D'")
-        return v
-
-    @field_validator("provider_npi")
-    def validate_npi(cls, v):
-        if not (1000000000 <= v <= 9999999999):
-            raise ValueError("Must be 10-digit NPI")
-        return v
+    provider_npi: conint(ge=1000000000, le=9999999999)
+    provider_fees: confloat(ge=0)
+    allowed_fees: confloat(ge=0)
+    member_coinsurance: confloat(ge=0)
+    member_copay: confloat(ge=0)
 
     @field_validator("service_date", mode="before")
     def parse_service_date(cls, v):
-        if isinstance(v, date): return v
-        try:
-            return datetime.strptime(v, "%m/%d/%y %H:%M").date()
-        except ValueError:
-            raise ValueError("service_date must be in 'MM/DD/YY HH:MM' format")
+        if isinstance(v, date):
+            return v
+        for fmt in ("%m/%d/%y %H:%M", "%Y-%m-%d", "%m/%d/%Y"):
+            try:
+                return datetime.strptime(v, fmt).date()
+            except ValueError:
+                continue
+        raise ValueError("Invalid service_date format")
