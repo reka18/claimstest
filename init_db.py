@@ -12,12 +12,20 @@ from normalize import (
     check_required_columns,
 )
 
-# Path to the CSV file loaded when container starts
+# Path to the CSV file loaded when the container starts
 CSV_FILE_PATH = "./claim_1234.csv"
 
 
-# Retry logic for database connection
 async def wait_for_db_connection():
+    """
+    Wait for the database connection to be available with retry logic.
+
+    Tries to connect up to 5 times, sleeping 5 seconds between each attempt.
+    If all attempts fail, raises a RuntimeError.
+
+    Raises:
+        RuntimeError: If the database connection cannot be established.
+    """
     retries = 5
     for attempt in range(retries):
         try:
@@ -32,8 +40,21 @@ async def wait_for_db_connection():
                 raise RuntimeError("[ERROR] Failed to connect to the database after several attempts")
 
 
-# Initialization of data
 async def initialize_data():
+    """
+    Load and normalize claim data from a CSV file, then insert it into the database.
+
+    This process:
+    - Waits for database availability
+    - Drops and recreates the claims table
+    - Reads the CSV file containing raw claim data
+    - Normalizes headers, monetary fields, and claim field values
+    - Validates required columns
+    - Calculates `net_fee` for each claim
+    - Bulk inserts all records into the database
+
+    If the CSV file is missing, the function will log the error and exit gracefully.
+    """
     await wait_for_db_connection()
 
     async with engine.begin() as conn:

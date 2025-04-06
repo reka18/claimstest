@@ -8,57 +8,80 @@ BASE_URL = "http://0.0.0.0:8001"
 
 @pytest.mark.asyncio
 async def test_health_check():
-    """Test health check endpoint."""
+    """
+    Test the /health endpoint to confirm service availability.
+
+    Sends a GET request to /health and verifies:
+    - HTTP 200 response status
+    - JSON body is {"message": "OK"}
+    """
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        # Make GET request to /health-check endpoint
         response = await client.get("/health")
 
-    # Assertions
     assert response.status_code == 200
     assert response.json() == {"message": "OK"}
 
 
 @pytest.mark.asyncio
 async def test_get_all_claims():
-    """Test retrieving all claims."""
+    """
+    Test the /claims endpoint for retrieving all stored claim records.
+
+    Sends a GET request to /claims and checks:
+    - HTTP 200 response status
+    - Response is a list
+    - If claims exist, they contain an 'id' field
+    """
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        # Make GET request to fetch all claims
         response = await client.get("/claims")
 
-    # Assertions
     assert response.status_code == 200
     claims = response.json()
-    assert isinstance(claims, list)  # Response should be a list
-    # Additional Assertion: Ensure there is at least one claim
+    assert isinstance(claims, list)
+
     if claims:
-        assert "id" in claims[0]  # Ensure claim objects have the required fields
+        assert "id" in claims[0]
 
 
 @pytest.mark.asyncio
 async def test_get_top_providers():
-    """Test getting the top providers."""
+    """
+    Test the /top_providers endpoint for computing top NPIs by net fee.
+
+    Sends a GET request and validates:
+    - HTTP 200 response status
+    - JSON structure contains "top_providers" as a list
+    - Each provider entry includes "provider_npi"
+    - Validates specific values for provider at index 2
+    """
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        # Make GET request to fetch top providers
         response = await client.get("/top_providers")
 
-    # Assertions
     assert response.status_code == 200
     data = response.json()
-    assert "top_providers" in data  # Response must include the providers key
+
+    assert "top_providers" in data
     providers = data["top_providers"]
-    assert isinstance(providers, list)  # Providers should be a list
-    # Additional Assertion: Ensure providers have necessary keys
+    assert isinstance(providers, list)
+
     if providers:
         assert "provider_npi" in providers[0]
-    # Assert that 1497775530 is 3rd in the list
+
+    # Validates known test data order
     assert providers[2]["provider_npi"] == 1497775530
-    # Assert that 1497775530 net_fee is 116
     assert providers[2]["total_net_fee"] == 116.85
 
 
 @pytest.mark.asyncio
 async def test_create_claim():
-    """Test creating a new claim."""
+    """
+    Test the /claims POST endpoint to create a new claim.
+
+    Sends a valid JSON payload and checks:
+    - HTTP 201 response status
+    - Correct net fee is computed
+    - All returned fields match the request input
+    """
     new_claim = {
         "service_date": "3/28/18 0:00",
         "submitted_procedure": "D123",
@@ -73,28 +96,32 @@ async def test_create_claim():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        # Make POST request to create a new claim
         response = await client.post("/claims", json=new_claim)
 
-    # Assertions
-    assert response.status_code == 201  # Created
+    assert response.status_code == 201
     created_claim = response.json()
 
-    # This is the expected net fee calculation
     new_claim["net_fee"] = 120.5
     for key in new_claim:
         if key == "service_date":
             parsed_date = datetime.strptime(new_claim[key], "%m/%d/%y %H:%M")
-            # Convert `parsed_date` to ISO string for comparison
             assert parsed_date.date().isoformat() == created_claim[key]
         else:
-            assert key in created_claim  # Ensure all fields are returned
-            assert created_claim[key] == new_claim[key]  # Values should match
+            assert key in created_claim
+            assert created_claim[key] == new_claim[key]
 
 
 @pytest.mark.asyncio
 async def test_top_providers():
-    """Test the /top_providers endpoint and validate the response."""
+    """
+    Validate that the /top_providers endpoint returns expected ordering and net fees.
+
+    Compares the API response to a known expected output of top 10 provider NPIs.
+    Checks both structure and values.
+
+    Raises:
+        AssertionError: If the actual output differs from the expected.
+    """
     expected_output = {
         "top_providers": [
             {"provider_npi": 1234567890, "total_net_fee": 570.5},
@@ -111,12 +138,8 @@ async def test_top_providers():
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-        # Make GET request to the /top_providers endpoint
         response = await client.get("/top_providers")
 
-    # Assertions
-    assert response.status_code == 200  # Ensure successful response
-
+    assert response.status_code == 200
     print(response.json())
-
-    assert response.json() == expected_output  # Validate the response matches expected output
+    assert response.json() == expected_output
