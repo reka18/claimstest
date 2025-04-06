@@ -13,3 +13,7 @@ CREATE TABLE claims (
     member_copay NUMERIC(10, 2) NOT NULL,
     net_fee NUMERIC(10, 2) NOT NULL,
 );
+
+CREATE INDEX idx_net_fee ON claims (net_fee);
+CREATE INDEX idx_provider_npi ON claims (provider_npi);
+CREATE INDEX idx_provider_npi_net_fee ON claims (provider_npi, net_fee);
