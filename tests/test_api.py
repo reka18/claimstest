@@ -1,6 +1,7 @@
-import pytest
-import httpx
 from datetime import datetime
+
+import httpx
+import pytest
 
 BASE_URL = "http://0.0.0.0:8001"
 
@@ -59,16 +60,16 @@ async def test_get_top_providers():
 async def test_create_claim():
     """Test creating a new claim."""
     new_claim = {
-		"service_date": "3/28/18 0:00",
-		"submitted_procedure": "D123",
-		"quadrant": "UR",
-		"plan_group": "Group A",
-		"subscriber_id": 100001,
-		"provider_npi": 1234567890,
-		"provider_fees": 500.75,
-		"allowed_fees": 450.50,
-		"member_coinsurance": 50.25,
-		"member_copay": 20.00,
+        "service_date": "3/28/18 0:00",
+        "submitted_procedure": "D123",
+        "quadrant": "UR",
+        "plan_group": "Group A",
+        "subscriber_id": 100001,
+        "provider_npi": 1234567890,
+        "provider_fees": 500.75,
+        "allowed_fees": 450.50,
+        "member_coinsurance": 50.25,
+        "member_copay": 20.00,
     }
 
     async with httpx.AsyncClient(base_url=BASE_URL) as client:
@@ -90,33 +91,32 @@ async def test_create_claim():
             assert key in created_claim  # Ensure all fields are returned
             assert created_claim[key] == new_claim[key]  # Values should match
 
-#
-#
-# @pytest.mark.asyncio
-# async def test_get_claim_by_id():
-#     """Test retrieving a specific claim by its ID."""
-#     claim_id = 1  # Assuming a claim with this ID exists in the test dataset
-#
-#     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-#         # Make GET request to fetch a claim by ID
-#         response = await client.get(f"/claims/{claim_id}")
-#
-#     # Assertions
-#     assert response.status_code == 200
-#     claim = response.json()
-#     assert "id" in claim  # Returned claim must have ID
-#     assert claim["id"] == claim_id
-#
-#
-# @pytest.mark.asyncio
-# async def test_get_non_existent_claim():
-#     """Test trying to retrieve a claim that does not exist."""
-#     non_existent_id = 999999
-#
-#     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-#         # Make GET request to fetch a non-existent claim
-#         response = await client.get(f"/claims/{non_existent_id}")
-#
-#     # Assertions
-#     assert response.status_code == 404  # Not Found
-#     assert response.json() == {"detail": f"Claim with id {non_existent_id} not found"}
+
+@pytest.mark.asyncio
+async def test_top_providers():
+    """Test the /top_providers endpoint and validate the response."""
+    expected_output = {
+        "top_providers": [
+            {"provider_npi": 1234567890, "total_net_fee": 570.5},
+            {"provider_npi": 1987654321, "total_net_fee": 271.88},
+            {"provider_npi": 1497775530, "total_net_fee": 116.85},
+            {"provider_npi": 1432109765, "total_net_fee": 90.0},
+            {"provider_npi": 1654321987, "total_net_fee": 85.0},
+            {"provider_npi": 1543219876, "total_net_fee": 85.0},
+            {"provider_npi": 1876543109, "total_net_fee": 72.5},
+            {"provider_npi": 1765431098, "total_net_fee": 72.5},
+            {"provider_npi": 1987654310, "total_net_fee": 70.0},
+            {"provider_npi": 1218764321, "total_net_fee": 67.5}
+        ]
+    }
+
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        # Make GET request to the /top_providers endpoint
+        response = await client.get("/top_providers")
+
+    # Assertions
+    assert response.status_code == 200  # Ensure successful response
+
+    print(response.json())
+
+    assert response.json() == expected_output  # Validate the response matches expected output

@@ -134,19 +134,23 @@ async def health_check():
 async def get_top_providers(session: AsyncSession = Depends(get_async_session)):
     """
     Fetches the top 10 providers by net fees.
-    Utilizes database indexing for optimal query performance.
+    If there are ties in net fees, sort by provider_npi in descending order.
     """
     query = (
         select(Claim.provider_npi, func.sum(Claim.net_fee).label("total_net_fee"))
-        .group_by(Claim.provider_npi)  # Leveraging index on provider_npi
-        .order_by(func.sum(Claim.net_fee).desc())  # Optimized with index on net_fee
+        .group_by(Claim.provider_npi)  # Group by provider_npi
+        .order_by(
+            func.sum(Claim.net_fee).desc(),  # Sort by net_fee descending
+            Claim.provider_npi.desc()  # If tied, then by provider_npi descending
+        )
         .limit(10)  # Limit to top 10 providers
     )
     result = await session.execute(query)
     top_providers = result.all()
     return {
         "top_providers": [
-            {"provider_npi": row.provider_npi, "total_net_fee": row.total_net_fee}
+            {"provider_npi": row.provider_npi, "total_net_fee": float(row.total_net_fee)}
             for row in top_providers
         ]
     }
+
