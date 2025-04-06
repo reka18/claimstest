@@ -30,24 +30,28 @@ async def test_get_all_claims():
     # Additional Assertion: Ensure there is at least one claim
     if claims:
         assert "id" in claims[0]  # Ensure claim objects have the required fields
-#
-#
-# @pytest.mark.asyncio
-# async def test_get_top_providers():
-#     """Test getting the top providers."""
-#     async with httpx.AsyncClient(base_url=BASE_URL) as client:
-#         # Make GET request to fetch top providers
-#         response = await client.get("/claims/top-providers")
-#
-#     # Assertions
-#     assert response.status_code == 200
-#     data = response.json()
-#     assert "providers" in data  # Response must include the providers key
-#     providers = data["providers"]
-#     assert isinstance(providers, list)  # Providers should be a list
-#     # Additional Assertion: Ensure providers have necessary keys
-#     if providers:
-#         assert "provider_npi" in providers[0]
+
+
+@pytest.mark.asyncio
+async def test_get_top_providers():
+    """Test getting the top providers."""
+    async with httpx.AsyncClient(base_url=BASE_URL) as client:
+        # Make GET request to fetch top providers
+        response = await client.get("/top_providers")
+
+    # Assertions
+    assert response.status_code == 200
+    data = response.json()
+    assert "top_providers" in data  # Response must include the providers key
+    providers = data["top_providers"]
+    assert isinstance(providers, list)  # Providers should be a list
+    # Additional Assertion: Ensure providers have necessary keys
+    if providers:
+        assert "provider_npi" in providers[0]
+    # Assert that 1497775530 is 3rd in the list
+    assert providers[2]["provider_npi"] == 1497775530
+    # Assert that 1497775530 net_fee is 116
+    assert providers[2]["total_net_fee"] == 116.85
 #
 #
 # @pytest.mark.asyncio
