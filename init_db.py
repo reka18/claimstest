@@ -109,5 +109,11 @@ async def initialize_data():
     print(f"[INFO] Successfully inserted {len(data)} rows into the database.")
 
 
+# Pseudo-code for batch ingestion (optional):
+# ------------------------------------------
+# After inserting each claim:
+# - Publish net_fee details to the payments queue (same format as above)
+# - Consider bulk publishing after batch commit
+# - Optionally flag each record as "payment_sent = False" and update after confirmation
 if __name__ == "__main__":
     asyncio.run(initialize_data())

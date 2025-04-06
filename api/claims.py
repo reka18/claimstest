@@ -29,6 +29,38 @@ async def create_claim(claim: ClaimCreate, session: AsyncSession = Depends(get_a
     Raises:
         HTTPException 400: If normalization fails, required fields are invalid,
                            or the resulting net fee is negative.
+
+
+    # Send net fee to payments service
+    # ----------------------------------------------
+    # After this claim is persisted successfully,
+    # we must notify the payments service that a new claim was processed.
+
+    # Option 1: Asynchronous Message Queue (Recommended for scale and resilience)
+    # - Push a message to a Redis stream / Kafka topic / RabbitMQ queue:
+    #     payload = {
+    #         "claim_id": db_claim.id,
+    #         "provider_npi": db_claim.provider_npi,
+    #         "net_fee": db_claim.net_fee,
+    #         "timestamp": db_claim.service_date.isoformat()
+    #     }
+    #     queue.publish("claims.to.payments", payload)
+    #
+    # - The payments service consumes this queue in parallel (multiple instances allowed)
+    #
+    # - If publishing fails, use retry logic or store a "pending_payment" log for reprocessing
+
+    # Option 2: Direct HTTP Call (Simpler but riskier under load or failure)
+    # - response = httpx.post("http://payments-service/handle_claim", json=payload)
+    # - If response fails:
+    #     - Store failed claim ID in a retry table or log for a background worker to retry
+    #     - Mark payment_status = "failed", to be retried via cron or task scheduler
+
+    # Failure Strategy:
+    # -----------------
+    # - If DB insert fails → no queue push (transaction rolled back)
+    # - If queue push fails → retry w/ exponential backoff, DLQ (dead-letter queue), or flag for manual intervention
+    # - Ensure idempotency: payments service must handle duplicates safely (deduplicate by claim ID or checksum)
     """
     try:
         cleaned = normalize_claim_dict(claim.model_dump())
