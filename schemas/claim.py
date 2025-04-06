@@ -2,6 +2,7 @@ from datetime import date, datetime
 from typing import Optional
 from pydantic import BaseModel, conint, confloat, constr, field_validator
 
+# Edits to push more validation into Pydantic's compiled internals
 class ClaimCreate(BaseModel):
     service_date: date
     submitted_procedure: constr(pattern=r"^D\w+")
