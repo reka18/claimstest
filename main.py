@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, Column, Integer, String, BigInteger, Numeric, Date
@@ -6,7 +7,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
 
-DATABASE_URL = "postgresql+asyncpg://claim_user:claim_password@db/claims_db"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # SQLAlchemy setup
 engine = create_async_engine(DATABASE_URL, echo=True)
@@ -88,7 +89,7 @@ async def get_all_claims(session: AsyncSession = Depends(get_async_session)):
 
 
 # Health check endpoint
-@app.get("/", tags=["Health"])
+@app.get("/health", tags=["Health"])
 async def health_check():
     return {"message": "OK"}
 

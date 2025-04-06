@@ -1,0 +1,34 @@
+services:
+  app_test:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile  # Path to Dockerfile
+    container_name: test_claim_process_app
+    ports:
+      - "8001:8000"  # Expose FastAPI on port 8000
+    command: >
+      bash -c "/app/wait-for-it.sh db_test:5432 -- python init_db.py && 
+      uvicorn main:app --host 0.0.0.0 --port 8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://test_user:test_password@db_test/test_claims_db
+    depends_on:
+      - db_test  # Ensures database starts before the app
+    volumes:
+      - .:/app  # Mount the local project directory (optional for development)
+
+  db_test:
+    image: postgres:15
+    container_name: claim_process_db_test
+    restart: always
+    ports:
+      - "5434:5432"  # Expose on a different port
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_claims_db
+    volumes:
+      - ./data/test_db:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d/
+
+volumes:
+  postgres_data:
